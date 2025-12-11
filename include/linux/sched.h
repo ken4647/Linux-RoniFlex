@@ -574,6 +574,21 @@ struct sched_entity {
 #endif
 };
 
+struct sched_rbnx_entity {
+	struct list_head		run_list;
+	unsigned long			timeout;
+	unsigned long			watchdog_stamp;
+	unsigned int			time_slice;
+	unsigned short			on_rq;
+	unsigned short			on_list;
+
+	int						latency;       // unit: ns
+	unsigned long			related_topic; // may use array[] will be better 
+	unsigned long long				vlast;
+
+	
+} __randomize_layout;
+
 struct sched_rt_entity {
 	struct list_head		run_list;
 	unsigned long			timeout;
@@ -798,6 +813,7 @@ struct task_struct {
 	struct sched_rt_entity		rt;
 	struct sched_dl_entity		dl;
 	struct sched_dl_entity		*dl_server;
+	struct sched_rbnx_entity    rbnx;
 	const struct sched_class	*sched_class;
 
 #ifdef CONFIG_SCHED_CORE

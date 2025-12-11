@@ -26,6 +26,8 @@ static inline bool task_is_realtime(struct task_struct *tsk)
 		return true;
 	if (policy == SCHED_DEADLINE)
 		return true;
+	if (policy == SCHED_RBNX)
+		return true;
 	return false;
 }
 

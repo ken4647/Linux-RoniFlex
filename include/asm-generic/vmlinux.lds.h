@@ -130,6 +130,7 @@
 	*(__stop_sched_class)			\
 	*(__dl_sched_class)			\
 	*(__rt_sched_class)			\
+	*(__rbnx_sched_class)       \
 	*(__fair_sched_class)			\
 	*(__idle_sched_class)			\
 	__sched_class_lowest = .;

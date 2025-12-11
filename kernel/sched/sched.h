@@ -185,10 +185,15 @@ static inline int dl_policy(int policy)
 {
 	return policy == SCHED_DEADLINE;
 }
+
+static inline int rbnx_policy(int policy){
+	return policy == SCHED_RBNX;
+}
+
 static inline bool valid_policy(int policy)
 {
 	return idle_policy(policy) || fair_policy(policy) ||
-		rt_policy(policy) || dl_policy(policy);
+		rt_policy(policy) || dl_policy(policy) || rbnx_policy(policy);
 }
 
 static inline int task_has_idle_policy(struct task_struct *p)
@@ -724,6 +729,14 @@ static inline bool rt_rq_is_runnable(struct rt_rq *rt_rq)
 	return rt_rq->rt_queued && rt_rq->rt_nr_running;
 }
 
+/* RBNX Runqueue with static array implementation */
+#define MAX_RBNX_RUNQUEUE 128+1
+struct rbnx_rq {
+	unsigned int		num;
+	unsigned long long tick;
+	struct sched_rbnx_entity* queue[MAX_RBNX_RUNQUEUE];
+};
+
 /* Deadline class' related fields in a runqueue */
 struct dl_rq {
 	/* runqueue is an rbtree, ordered by deadline */
@@ -1014,6 +1027,7 @@ struct rq {
 
 	struct cfs_rq		cfs;
 	struct rt_rq		rt;
+	struct rbnx_rq      rbnx;
 	struct dl_rq		dl;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
@@ -2362,6 +2376,7 @@ extern struct sched_class __sched_class_lowest[];
 extern const struct sched_class stop_sched_class;
 extern const struct sched_class dl_sched_class;
 extern const struct sched_class rt_sched_class;
+extern const struct sched_class rbnx_sched_class;
 extern const struct sched_class fair_sched_class;
 extern const struct sched_class idle_sched_class;
 
@@ -2892,6 +2907,7 @@ static inline void resched_latency_warn(int cpu, u64 latency) {}
 #endif /* CONFIG_SCHED_DEBUG */
 
 extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+extern void init_rbnx_rq(struct rbnx_rq *rbnx_rq);
 extern void init_rt_rq(struct rt_rq *rt_rq);
 extern void init_dl_rq(struct dl_rq *dl_rq);
 

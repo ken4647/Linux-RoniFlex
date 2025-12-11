@@ -36,6 +36,7 @@
 #include <linux/sched/nohz.h>
 #include <linux/sched/rseq_api.h>
 #include <linux/sched/rt.h>
+#include <linux/sched/rbnx.h>
 
 #include <linux/blkdev.h>
 #include <linux/context_tracking.h>
@@ -2167,6 +2168,8 @@ static inline int __normal_prio(int policy, int rt_prio, int nice)
 		prio = MAX_DL_PRIO - 1;
 	else if (rt_policy(policy))
 		prio = MAX_RT_PRIO - 1 - rt_prio;
+	else if (rbnx_policy(policy))
+		prio = MAGIC_RBNX_PRIO;
 	else
 		prio = NICE_TO_PRIO(nice);
 
@@ -4787,6 +4790,8 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 		return -EAGAIN;
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
+	else if (rbnx_prio(p->prio))
+		p->sched_class = &rbnx_sched_class;
 	else
 		p->sched_class = &fair_sched_class;
 
@@ -7066,6 +7071,8 @@ static void __setscheduler_prio(struct task_struct *p, int prio)
 		p->sched_class = &dl_sched_class;
 	else if (rt_prio(prio))
 		p->sched_class = &rt_sched_class;
+	else if (rbnx_prio(prio))
+		p->sched_class = &rbnx_sched_class;
 	else
 		p->sched_class = &fair_sched_class;
 
@@ -7716,11 +7723,17 @@ recheck:
 	 * 1..MAX_RT_PRIO-1, valid priority for SCHED_NORMAL,
 	 * SCHED_BATCH and SCHED_IDLE is 0.
 	 */
-	if (attr->sched_priority > MAX_RT_PRIO-1)
-		return -EINVAL;
-	if ((dl_policy(policy) && !__checkparam_dl(attr)) ||
-	    (rt_policy(policy) != (attr->sched_priority != 0)))
-		return -EINVAL;
+	if (rbnx_policy(policy)){
+		if (attr->sched_priority != MAGIC_RBNX_PRIO)
+			return -EINVAL;
+	}else{
+		if (attr->sched_priority > MAX_RT_PRIO-1)
+			return -EINVAL;
+		if ((dl_policy(policy) && !__checkparam_dl(attr)) ||
+			(rt_policy(policy) != (attr->sched_priority != 0)))
+			return -EINVAL;		
+	}
+
 
 	if (user) {
 		retval = user_check_sched_setscheduler(p, attr, policy, reset_on_fork);
@@ -9904,7 +9917,8 @@ void __init sched_init(void)
 
 	/* Make sure the linker didn't screw up */
 	BUG_ON(&idle_sched_class != &fair_sched_class + 1 ||
-	       &fair_sched_class != &rt_sched_class + 1 ||
+	       &fair_sched_class != &rbnx_sched_class + 1 ||
+		   &rbnx_sched_class != &rt_sched_class + 1 ||
 	       &rt_sched_class   != &dl_sched_class + 1);
 #ifdef CONFIG_SMP
 	BUG_ON(&dl_sched_class != &stop_sched_class + 1);
@@ -9970,6 +9984,7 @@ void __init sched_init(void)
 		rq->calc_load_active = 0;
 		rq->calc_load_update = jiffies + LOAD_FREQ;
 		init_cfs_rq(&rq->cfs);
+		init_rbnx_rq(&rq->rbnx);
 		init_rt_rq(&rq->rt);
 		init_dl_rq(&rq->dl);
 #ifdef CONFIG_FAIR_GROUP_SCHED
