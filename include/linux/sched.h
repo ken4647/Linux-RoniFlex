@@ -586,6 +586,12 @@ struct sched_rbnx_entity {
 	unsigned long			related_topic; // may use array[] will be better 
 	unsigned long long				vlast;
 
+	u32 			times;
+
+	/* Tag-based scheduling fields */
+	u32				tag;		/* Tag ID (0 means no tag assigned) */
+	u64				runtime_us;	/* Total runtime in microseconds */
+	u64				last_update_time_us; /* Last time runtime was updated */
 	
 } __randomize_layout;
 

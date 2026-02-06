@@ -734,6 +734,9 @@ static inline bool rt_rq_is_runnable(struct rt_rq *rt_rq)
 struct rbnx_rq {
 	unsigned int		num;
 	unsigned long long tick;
+	u64			rbnx_time;
+	u64			rbnx_runtime;
+	u64			rbnx_period_start;	/* start of current 1s period (ns) */
 	struct sched_rbnx_entity* queue[MAX_RBNX_RUNQUEUE];
 };
 
@@ -2393,6 +2396,11 @@ static inline bool sched_dl_runnable(struct rq *rq)
 static inline bool sched_rt_runnable(struct rq *rq)
 {
 	return rq->rt.rt_queued > 0;
+}
+
+static inline bool sched_rbnx_runnable(struct rq *rq)
+{
+	return rq->rbnx.num > 0;
 }
 
 static inline bool sched_fair_runnable(struct rq *rq)
